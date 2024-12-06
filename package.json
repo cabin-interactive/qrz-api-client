@@ -3,8 +3,10 @@
   "version": "1.0.0",
   "description": "A TypeScript wrapper for the QRZ.com API",
   "main": "index.js",
+  "type": "module",
   "scripts": {
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:watch": "vitest watch"
   },
   "repository": {
     "type": "git",
