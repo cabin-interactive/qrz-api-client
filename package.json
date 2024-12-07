@@ -1,5 +1,5 @@
 {
-  "name": "qrz-api-client",
+  "name": "@cabin-interactive/qrz-api-client",
   "version": "1.0.0",
   "description": "A TypeScript wrapper for the QRZ.com API",
   "keywords": [
@@ -9,6 +9,9 @@
     "api",
     "typescript"
   ],
+  "publishConfig": {
+    "access": "public"
+  },
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "files": [
@@ -18,7 +21,8 @@
     "build": "tsc",
     "prepare": "yarn build",
     "test": "vitest run",
-    "test:watch": "vitest watch"
+    "test:watch": "vitest watch",
+    "type-check": "tsc --noEmit"
   },
   "repository": {
     "type": "git",

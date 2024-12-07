@@ -14,32 +14,20 @@ export default class QrzApiClient {
     }
     this.config = config;
   }
+  private createFormData(params: QrzBaseParams): URLSearchParams {
+    const upperCaseParams = Object.entries(params).reduce((acc, [key, value]) => {
+      if (value !== undefined) {
+        acc[key.toUpperCase()] = value;
+      }
+      return acc;
+    }, {} as Record<string, string>);
 
-  /**
-   * Makes a request to the QRZ API
-   * 
-   * @param params - Request parameters
-   * @param params.action - Type of request ('STATUS', 'INSERT', 'DELETE', 'FETCH')
-   * @param params.adif - Optional ADIF formatted input data
-   * @param params.option - Optional action-specific options
-   * @param params.logIds - Optional comma separated list of integer logid values
-   * 
-   * @throws {QrzNetworkError} When the HTTP request fails
-   * @throws {QrzUnknownActionError} When the action is not recognized by the API
-   * @throws {QrzAuthError} When the API key is invalid or lacks privileges
-   * @throws {QrzError} For other API-level errors
-   */
-  private async makeRequest(params: QrzBaseParams): Promise<QrzResponse> {
-    const formData = new URLSearchParams({
-      ...Object.entries(params).reduce((acc, [key, value]) => {
-        if (value !== undefined) {
-          acc[key.toUpperCase()] = value;
-        }
-        return acc;
-      }, {} as Record<string, string>),
+    return new URLSearchParams({
+      ...upperCaseParams,
       KEY: this.config.apiKey,
     });
-
+  }
+  private async fetchWithErrorHandling(formData: URLSearchParams): Promise<string> {
     const response = await fetch(this.baseUrl, {
       method: 'POST',
       headers: {
@@ -55,8 +43,10 @@ export default class QrzApiClient {
       );
     }
 
-    const text = await response.text();
-    const parsedResponse = parseQrzResponse(text);
+    return response.text();
+  }
+
+  private handleQrzResponse(parsedResponse: QrzResponse, action: string): QrzResponse {
     const result = parsedResponse.result;
 
     switch (result) {
@@ -64,7 +54,7 @@ export default class QrzApiClient {
         throw new QrzAuthError(parsedResponse.reason || 'Authentication failed');
       case 'FAIL':
         if (parsedResponse.reason === 'unrecognized command') {
-          throw new QrzUnknownActionError(parsedResponse.reason, params.action);
+          throw new QrzUnknownActionError(parsedResponse.reason, action);
         }
         throw new QrzError(parsedResponse.reason || 'Operation failed');
       case 'OK':
@@ -72,5 +62,26 @@ export default class QrzApiClient {
       default:
         throw new QrzError(`Unknown result type: ${result}`);
     }
+  }
+
+  /**
+   * Makes a request to the QRZ API
+   * 
+   * @param params - Request parameters
+   * @param params.action - Type of request ('STATUS', 'INSERT', 'DELETE', 'FETCH')
+   * @param params.adif - Optional ADIF formatted input data
+   * @param params.option - Optional action-specific options
+   * @param params.logIds - Optional comma separated list of integer logid values
+   * 
+   * @throws {QrzNetworkError} When the HTTP request fails
+   * @throws {QrzUnknownActionError} When the action is not recognized by the API
+   * @throws {QrzAuthError} When the API key is invalid or lacks privileges
+   * @throws {QrzError} For other API-level errors
+   */
+  public async makeRequest(params: QrzBaseParams): Promise<QrzResponse> {
+    const formData = this.createFormData(params);
+    const responseText = await this.fetchWithErrorHandling(formData);
+    const parsedResponse = parseQrzResponse(responseText);
+    return this.handleQrzResponse(parsedResponse, params.action);
   }
 }

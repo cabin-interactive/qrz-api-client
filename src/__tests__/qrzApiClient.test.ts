@@ -11,7 +11,6 @@ import type {
 import { QrzError, QrzAuthError, QrzNetworkError, QrzUnknownActionError } from '../errors'
 import { parseQrzResponse } from '../parser'
 
-// Test helpers for creating typed responses
 const mockQrzResponse = {
   success: (data?: Partial<QrzSuccessResponse>): QrzResponse => ({
     result: 'OK',
@@ -58,20 +57,44 @@ describe('QrzClient', () => {
     })
   })
 
-  describe('makeRequest', () => {
-    it('should make POST request with correct headers and form data', async () => {
+  describe('createFormData', () => {
+    it('should convert params to uppercase', async () => {
+      const formData = await (client as any).createFormData({
+        action: 'STATUS' as QrzAction,
+        option: 'test-option'
+      })
+
+      expect(formData.toString()).toContain('ACTION=STATUS')
+      expect(formData.toString()).toContain('OPTION=test-option')
+    })
+
+    it('should include API key', async () => {
+      const formData = await (client as any).createFormData({
+        action: 'STATUS' as QrzAction
+      })
+
+      expect(formData.toString()).toContain('KEY=test-api-key')
+    })
+
+    it('should skip undefined values', async () => {
+      const formData = await (client as any).createFormData({
+        action: 'STATUS' as QrzAction,
+        option: undefined
+      })
+
+      expect(formData.toString()).not.toContain('OPTION')
+    })
+  })
+
+  describe('fetchWithErrorHandling', () => {
+    it('should make POST request with correct headers', async () => {
       fetchSpy.mockResolvedValueOnce({
         ok: true,
         text: () => Promise.resolve('RESULT=OK')
       })
 
-      parseQrzResponseSpy.mockReturnValueOnce(
-        mockQrzResponse.success()
-      )
-
-      await (client as any).makeRequest({
-        action: 'STATUS' as QrzAction
-      })
+      const formData = new URLSearchParams({ TEST: 'value' })
+      await (client as any).fetchWithErrorHandling(formData)
 
       expect(fetchSpy).toHaveBeenCalledWith(
         'https://logbook.qrz.com/api',
@@ -80,68 +103,9 @@ describe('QrzClient', () => {
           headers: {
             'Content-Type': 'application/x-www-form-urlencoded',
           },
-          body: expect.any(String)
+          body: formData.toString()
         }
       )
-
-      const [, { body }] = fetchSpy.mock.calls[0]
-      expect(body).toContain('KEY=test-api-key')
-      expect(body).toContain('ACTION=STATUS')
-    })
-
-    it('should throw a QrzAuthError when the API key is invalid', async () => {
-      const mockResponse = {
-        ok: true,
-        text: () => Promise.resolve('STATUS=AUTH&RESULT=AUTH&REASON=invalid api key 1234567&EXTENDED=')
-      }
-
-      fetchSpy
-        .mockResolvedValueOnce(mockResponse)
-        .mockResolvedValueOnce(mockResponse)
-
-      const authResponse = mockQrzResponse.auth('invalid api key 1234567')
-
-      parseQrzResponseSpy
-        .mockReturnValueOnce(authResponse)
-        .mockReturnValueOnce(authResponse)
-
-      await expect((client as any).makeRequest({
-        action: 'STATUS' as QrzAction
-      })).rejects.toThrow(QrzAuthError)
-
-      await expect((client as any).makeRequest({
-        action: 'STATUS' as QrzAction
-      })).rejects.toMatchObject({
-        message: 'invalid api key 1234567'
-      })
-    })
-
-    it('should throw QrzUnknownActionError for unrecognized actions', async () => {
-      const mockResponse = {
-        ok: true,
-        text: () => Promise.resolve('STATUS=FAIL&RESULT=FAIL&REASON=unrecognized command&EXTENDED=')
-      }
-
-      fetchSpy
-        .mockResolvedValueOnce(mockResponse)
-        .mockResolvedValueOnce(mockResponse)
-
-      const failResponse = mockQrzResponse.fail('unrecognized command')
-
-      parseQrzResponseSpy
-        .mockReturnValueOnce(failResponse)
-        .mockReturnValueOnce(failResponse)
-
-      await expect((client as any).makeRequest({
-        action: 'STATUS' as QrzAction
-      })).rejects.toThrow(QrzUnknownActionError)
-
-      await expect((client as any).makeRequest({
-        action: 'STATUS' as QrzAction
-      })).rejects.toMatchObject({
-        command: 'STATUS',
-        message: 'unrecognized command'
-      })
     })
 
     it('should throw QrzNetworkError when response is not ok', async () => {
@@ -150,32 +114,41 @@ describe('QrzClient', () => {
         status: 500
       })
 
-      await expect((client as any).makeRequest({
-        action: 'STATUS' as QrzAction
-      }))
+      const formData = new URLSearchParams({ TEST: 'value' })
+      await expect((client as any).fetchWithErrorHandling(formData))
         .rejects
         .toThrow(QrzNetworkError)
     })
+  })
 
-    it('should throw QrzError when result is not OK', async () => {
-      fetchSpy.mockResolvedValueOnce({
-        ok: true,
-        text: () => Promise.resolve('RESULT=ERROR')
-      })
-
-      parseQrzResponseSpy.mockReturnValueOnce({
-        result: 'ERROR' as QrzResultType,
-        reason: 'Unknown error'
-      })
-
-      await expect((client as any).makeRequest({
-        action: 'STATUS' as QrzAction
-      }))
-        .rejects
-        .toThrow(QrzError)
+  describe('handleQrzResponse', () => {
+    it('should return response for OK result', () => {
+      const response = mockQrzResponse.success({ data: 'test' })
+      const result = (client as any).handleQrzResponse(response, 'STATUS')
+      expect(result).toEqual(response)
     })
 
-    it('should handle additional parameters', async () => {
+    it('should throw QrzAuthError for AUTH result', () => {
+      const response = mockQrzResponse.auth('invalid key')
+      expect(() => (client as any).handleQrzResponse(response, 'STATUS'))
+        .toThrow(QrzAuthError)
+    })
+
+    it('should throw QrzUnknownActionError for unrecognized command', () => {
+      const response = mockQrzResponse.fail('unrecognized command')
+      expect(() => (client as any).handleQrzResponse(response, 'STATUS'))
+        .toThrow(QrzUnknownActionError)
+    })
+
+    it('should throw QrzError for other FAIL results', () => {
+      const response = mockQrzResponse.fail('other error')
+      expect(() => (client as any).handleQrzResponse(response, 'STATUS'))
+        .toThrow(QrzError)
+    })
+  })
+
+  describe('makeRequest', () => {
+    it('should orchestrate the request flow successfully', async () => {
       fetchSpy.mockResolvedValueOnce({
         ok: true,
         text: () => Promise.resolve('RESULT=OK&DATA=test-data')
@@ -187,17 +160,16 @@ describe('QrzClient', () => {
         })
       )
 
-      await (client as any).makeRequest({
+      const result = await (client as any).makeRequest({
         action: 'STATUS' as QrzAction,
-        option: 'test-option',
-        customParam: 'custom-value'
+        option: 'test-option'
       })
 
-      const [, { body }] = fetchSpy.mock.calls[0]
-      expect(body).toContain('KEY=test-api-key')
-      expect(body).toContain('ACTION=STATUS')
-      expect(body).toContain('OPTION=test-option')
-      expect(body).toContain('CUSTOMPARAM=custom-value')
+      expect(result).toEqual(
+        mockQrzResponse.success({
+          data: 'test-data'
+        })
+      )
     })
   })
 })
