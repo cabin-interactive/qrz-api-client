@@ -1,6 +1,6 @@
 {
   "name": "@cabin-interactive/qrz-api-client",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A TypeScript wrapper for the QRZ.com API",
   "keywords": [
     "qrz",

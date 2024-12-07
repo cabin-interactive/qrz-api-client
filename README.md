@@ -1,6 +1,6 @@
 # QRZ API Client
 
-[![Tests](https://github.com/cabin-interactive/qrz-api-client/actions/workflows/test.yml/badge.svg)](https://github.com/username/qrz-api-client/actions)
+[![Tests](https://github.com/cabin-interactive/qrz-api-client/actions/workflows/test.yml/badge.svg)](https://github.com/cabin-interactive/qrz-api-client/actions)
 ![GitHub License](https://img.shields.io/github/license/cabin-interactive/qrz-api-client)
 
 
