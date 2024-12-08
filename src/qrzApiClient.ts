@@ -1,7 +1,7 @@
 // qrzApiClient.ts
 import { parseQrzResponse } from "./parser";
 import { QrzError, QrzAuthError, QrzNetworkError, QrzUnknownActionError } from "./errors";
-import { QrzBaseParams, QrzConfig, QrzResponse } from "./types";
+import { QrzBaseParams, QrzConfig, QrzResponse, QrzAuthTestResult } from "./types";
 
 
 export default class QrzApiClient {
@@ -83,5 +83,41 @@ export default class QrzApiClient {
     const responseText = await this.fetchWithErrorHandling(formData);
     const parsedResponse = parseQrzResponse(responseText);
     return this.handleQrzResponse(parsedResponse, params.action);
+  }
+
+  /**
+   * Tests if the API key is valid by making a STATUS request
+   * 
+   * @returns Promise<AuthTestResult> Object containing test result
+   * @example
+   * const result = await client.testAuth();
+   * if (result.isValid) {
+   *   console.log('API key is valid');
+   * } else {
+   *   console.log('API key is invalid:', result.error);
+   * }
+   */
+  public async testAuth(): Promise<QrzAuthTestResult> {
+    try {
+      await this.makeRequest({ action: 'STATUS' });
+      return { isValid: true };
+    } catch (error) {
+      if (error instanceof QrzAuthError) {
+        return {
+          isValid: false,
+          error: error.message
+        };
+      }
+      if (error instanceof QrzNetworkError) {
+        return {
+          isValid: false,
+          error: 'Could not connect to QRZ.com API'
+        };
+      }
+      return {
+        isValid: false,
+        error: 'Unknown error occurred while testing API key'
+      };
+    }
   }
 }

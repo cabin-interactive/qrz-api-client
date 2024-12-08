@@ -172,4 +172,69 @@ describe('QrzClient', () => {
       )
     })
   })
+  describe('testAuth', () => {
+    it('should return valid result for successful auth', async () => {
+      fetchSpy.mockResolvedValueOnce({
+        ok: true,
+        text: () => Promise.resolve('RESULT=OK')
+      })
+
+      parseQrzResponseSpy.mockReturnValueOnce({
+        result: 'OK'
+      })
+
+      const result = await client.testAuth()
+      expect(result).toEqual({
+        isValid: true
+      })
+    })
+
+    it('should return invalid result for auth error', async () => {
+      fetchSpy.mockResolvedValueOnce({
+        ok: true,
+        text: () => Promise.resolve('RESULT=AUTH&REASON=invalid api key')
+      })
+
+      parseQrzResponseSpy.mockReturnValueOnce({
+        result: 'AUTH',
+        reason: 'invalid api key'
+      })
+
+      const result = await client.testAuth()
+      expect(result).toEqual({
+        isValid: false,
+        error: 'invalid api key'
+      })
+    })
+
+    it('should return invalid result for network error', async () => {
+      fetchSpy.mockResolvedValueOnce({
+        ok: false,
+        status: 500
+      })
+
+      const result = await client.testAuth()
+      expect(result).toEqual({
+        isValid: false,
+        error: 'Could not connect to QRZ.com API'
+      })
+    })
+
+    it('should return invalid result for unknown error', async () => {
+      fetchSpy.mockResolvedValueOnce({
+        ok: true,
+        text: () => Promise.resolve('RESULT=ERROR')
+      })
+
+      parseQrzResponseSpy.mockReturnValueOnce({
+        result: 'ERROR'
+      })
+
+      const result = await client.testAuth()
+      expect(result).toEqual({
+        isValid: false,
+        error: 'Unknown error occurred while testing API key'
+      })
+    })
+  })
 })

@@ -46,6 +46,24 @@ await client.makeRequest({
 });
 ```
 
+## Authentication
+Before making API requests, you can verify your API key is valid:
+
+```typescript
+const authTest = await client.testAuth();
+
+if (authTest.isValid) {
+  console.log('API key is valid');
+} else {
+  console.log('Authentication failed:', authTest.error);
+  // Possible errors:
+  // - 'invalid api key'
+  // - 'Could not connect to QRZ.com API'
+  // - 'Unknown error occurred while testing API key'
+}
+```
+This test makes a simple STATUS request to verify your API key and connection to QRZ.com
+
 ## Supported Actions
 
 The QRZ API supports the following actions:
