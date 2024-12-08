@@ -1,3 +1,3 @@
-export { default as QrzApiClient } from './qrzApiClient';
+export { default } from './qrzApiClient';
 export * from './types';
 export * from './errors';

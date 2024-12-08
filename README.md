@@ -1,30 +1,60 @@
-# QRZ API Client
+# QRZ.com API Client
 
 [![Tests](https://github.com/cabin-interactive/qrz-api-client/actions/workflows/test.yml/badge.svg)](https://github.com/cabin-interactive/qrz-api-client/actions)
+![npm](https://img.shields.io/npm/v/@cabin-interactive/qrz-api-client)
 ![GitHub License](https://img.shields.io/github/license/cabin-interactive/qrz-api-client)
 
-
 A TypeScript client for interacting with the QRZ.com Logbook API.
+
+## QRZ.com API
+
+This client interacts with the [QRZ.com Logbook API](https://www.qrz.com/docs/logbook/QRZLogbookAPI.html). To use this client, you'll need:
+
+1. A QRZ.com account
+2. An XML Subscription in some cases (required for some API features)
+3. An API key from QRZ.com
+
+For more information about QRZ.com subscriptions and features, visit [QRZ.com](https://www.qrz.com/).
 
 ## Installation
 
 ```bash
-npm install qrz-api-client
+npm install @cabin-interactive/qrz-api-client
 # or
-yarn add qrz-api-client
+yarn add @cabin-interactive/qrz-api-client
 ```
 
 ## Basic Usage
 
 ```typescript
-import QrzApiClient from 'qrz-api-client';
+import QrzApiClient from '@cabin-interactive/qrz-api-client';
 
 const client = new QrzApiClient({
   apiKey: 'your-api-key'
 });
 
-// Example coming soon...
+// Example: Get status
+await client.makeRequest({ 
+  action: 'STATUS'
+});
+
+// Example: With additional parameters
+await client.makeRequest({ 
+  action: 'STATUS',
+  option: 'value',
+  customParam: 'value'
+});
 ```
+
+## Supported Actions
+
+The QRZ API supports the following actions:
+- `STATUS`
+- `INSERT`
+- `DELETE`
+- `FETCH`
+
+Each action may accept different parameters. See the [QRZ API documentation](https://www.qrz.com/docs/logbook/QRZLogbookAPI.html) for details.
 
 ## Features
 
@@ -43,7 +73,10 @@ The client provides several error types for different situations:
 - `QrzUnknownActionError`: Thrown when an invalid action is requested
 
 ```typescript
+import { QrzAuthError } from '@cabin-interactive/qrz-api-client';
+
 try {
+  const client = new QrzApiClient({ apiKey: 'your-api-key' });
   await client.makeRequest({ action: 'STATUS' });
 } catch (error) {
   if (error instanceof QrzAuthError) {
@@ -69,4 +102,4 @@ Pull requests are welcome. For major changes, please open an issue first to disc
 
 ## License
 
-[MIT](https://choosealicense.com/licenses/mit/)
+[ISC](https://choosealicense.com/licenses/isc/)
