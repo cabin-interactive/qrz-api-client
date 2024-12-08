@@ -1,10 +1,9 @@
 {
   "name": "@cabin-interactive/qrz-api-client",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "A TypeScript wrapper for the QRZ.com API",
   "author": "Jarrett Green",
   "license": "ISC",
-
   "keywords": [
     "qrz",
     "adif",
@@ -12,7 +11,6 @@
     "api",
     "typescript"
   ],
-
   "main": "dist/index.js",
   "module": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -27,7 +25,6 @@
   "files": [
     "dist"
   ],
-
   "repository": {
     "type": "git",
     "url": "git+https://github.com/cabin-interactive/qrz-api-client.git"
@@ -36,11 +33,9 @@
     "url": "https://github.com/cabin-interactive/qrz-api-client/issues"
   },
   "homepage": "https://github.com/cabin-interactive/qrz-api-client#readme",
-
   "publishConfig": {
     "access": "public"
   },
-
   "scripts": {
     "build": "tsc",
     "clean": "rm -rf dist",
@@ -53,7 +48,6 @@
     "test:watch": "vitest watch",
     "type-check": "tsc --noEmit"
   },
-
   "devDependencies": {
     "@types/node": "^22.10.1",
     "typescript": "^5.7.2",
