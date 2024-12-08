@@ -1,6 +1,10 @@
 export type QrzAction = 'STATUS' | 'INSERT' | 'DELETE' | 'FETCH';
 export type QrzResultType = 'OK' | 'FAIL' | 'AUTH';
 
+export interface QrzAuthTestResult {
+  isValid: boolean;
+  error?: string;
+}
 export interface QrzConfig {
   apiKey: string;
 }
