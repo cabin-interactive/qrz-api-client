@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import QrzApiClient from '../qrzApiClient'
 import type {
   QrzAction,
@@ -56,6 +56,45 @@ describe('QrzClient', () => {
       expect(() => new QrzApiClient({ apiKey: '' })).toThrow(QrzError)
     })
   })
+
+  describe('baseUrl', () => {
+    const originalWindow = global.window;
+    let consoleSpy: ReturnType<typeof vi.spyOn>;
+
+    beforeEach(() => {
+      (global as any).window = undefined;
+      consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => { });
+    });
+
+    afterEach(() => {
+      if (originalWindow) {
+        (global as any).window = originalWindow;
+      }
+      consoleSpy.mockRestore();
+    });
+
+    it('should use direct API URL in non-browser environment', () => {
+      const client = new QrzApiClient({ apiKey: 'test' });
+      expect((client as any).baseUrl).toBe('https://logbook.qrz.com/api');
+      expect(consoleSpy).not.toHaveBeenCalled();
+    });
+
+    it('should warn and use direct API URL in browser without proxy', () => {
+      (global as any).window = {};
+      const client = new QrzApiClient({ apiKey: 'test' });
+      expect((client as any).baseUrl).toBe('https://logbook.qrz.com/api');
+      expect(consoleSpy).toHaveBeenCalled();
+    });
+
+    it('should use proxy URL when provided', () => {
+      const proxyUrl = 'https://my-proxy.com';
+      const client = new QrzApiClient({
+        apiKey: 'test',
+        proxyUrl
+      });
+      expect((client as any).baseUrl).toBe(proxyUrl);
+    });
+  });
 
   describe('createFormData', () => {
     it('should convert params to uppercase', async () => {

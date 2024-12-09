@@ -6,7 +6,6 @@ import { QrzBaseParams, QrzConfig, QrzResponse, QrzAuthTestResult } from "./type
 
 export default class QrzApiClient {
   private readonly config: QrzConfig;
-  private readonly baseUrl = 'https://logbook.qrz.com/api';
 
   constructor(config: QrzConfig) {
     if (!config.apiKey) {
@@ -14,6 +13,25 @@ export default class QrzApiClient {
     }
     this.config = config;
   }
+
+  private get baseUrl(): string {
+    // Direct API URL
+    if (!this.config.proxyUrl) {
+      // Check if we're in a browser
+      if (typeof window !== 'undefined') {
+        console.warn('Using QRZ API directly in a browser environment may fail due to CORS restrictions. Consider using a proxy.');
+      }
+      return 'https://logbook.qrz.com/api';
+    }
+    try {
+      new URL(this.config.proxyUrl);
+    } catch (e) {
+      throw new QrzError('Invalid proxy URL provided');
+    }
+    // Use provided proxy
+    return this.config.proxyUrl;
+  }
+
   private createFormData(params: QrzBaseParams): URLSearchParams {
     const upperCaseParams = Object.entries(params).reduce((acc, [key, value]) => {
       if (value !== undefined) {
