@@ -6,14 +6,14 @@ import QrzApiClient, {
   QrzNetworkError,
   QrzUnknownActionError,
   type QrzAction,
-  type QrzConfig,
+  type QrzClientConfig,
   type QrzResponse
 } from '../index'
 
 describe('index exports', () => {
   it('should export QrzApiClient as default', () => {
     expect(QrzApiClient).toBeDefined()
-    expect(new QrzApiClient({ apiKey: 'test' })).toBeInstanceOf(QrzApiClient)
+    expect(new QrzApiClient({ apiKey: 'test', userAgent: 'test/1.0.0' })).toBeInstanceOf(QrzApiClient)
   })
 
   it('should export error classes', () => {
@@ -24,13 +24,12 @@ describe('index exports', () => {
   })
 
   it('should export types', () => {
-    const config: QrzConfig = { apiKey: 'test' }
+    const config: QrzClientConfig = { apiKey: 'test', userAgent: 'test/1.0.0' }
     expect(config).toBeDefined()
 
     const action: QrzAction = 'STATUS'
     expect(action).toBeDefined()
 
-    // We can't directly test types, but we can verify they're importable
     const response: QrzResponse = {
       result: 'OK'
     }

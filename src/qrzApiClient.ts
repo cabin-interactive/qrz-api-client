@@ -1,15 +1,21 @@
 // qrzApiClient.ts
 import { parseQrzResponse } from "./parser";
 import { QrzError, QrzAuthError, QrzNetworkError, QrzUnknownActionError } from "./errors";
-import { QrzBaseParams, QrzConfig, QrzResponse, QrzAuthTestResult } from "./types";
+import { QrzBaseParams, QrzClientConfig, QrzResponse, QrzAuthTestResult } from "./types";
 
 
 export default class QrzApiClient {
-  private readonly config: QrzConfig;
+  private readonly config: QrzClientConfig;
 
-  constructor(config: QrzConfig) {
+  constructor(config: QrzClientConfig) {
     if (!config.apiKey) {
       throw new QrzError('API key is required');
+    }
+    if (!config.userAgent || config.userAgent.trim() === '') {
+      throw new QrzError('User agent is required. Please provide a unique identifier for your application.');
+    }
+    if (config.userAgent.length > 128) {
+      throw new QrzError('User agent must be 128 characters or less');
     }
     this.config = config;
   }
@@ -50,6 +56,7 @@ export default class QrzApiClient {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
+        'User-Agent': this.config.userAgent,
       },
       body: formData.toString(),
     });

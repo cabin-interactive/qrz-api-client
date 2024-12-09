@@ -42,19 +42,56 @@ describe('QrzClient', () => {
     parseQrzResponseSpy = vi.fn()
     vi.mocked(parseQrzResponse).mockImplementation(parseQrzResponseSpy)
     client = new QrzApiClient({
-      apiKey: 'test-api-key'
+      apiKey: 'test-api-key',
+      userAgent: 'TestApp/1.0.0'
     })
   })
 
   describe('constructor', () => {
-    it('should create an instance with config', () => {
-      const client = new QrzApiClient({ apiKey: 'test-api' })
+    it('should create an instance with valid config', () => {
+      const client = new QrzApiClient({
+        apiKey: 'test-api',
+        userAgent: 'TestApp/1.0.0'
+      })
       expect(client).toBeInstanceOf(QrzApiClient)
     })
 
     it('should require an API key', () => {
-      expect(() => new QrzApiClient({ apiKey: '' })).toThrow(QrzError)
+      expect(() => new QrzApiClient({
+        apiKey: '',
+        userAgent: 'TestApp/1.0.0'
+      })).toThrow(QrzError)
     })
+
+    it('should require a user agent', () => {
+      expect(() => new QrzApiClient({
+        apiKey: 'test-api',
+        // @ts-expect-error Testing runtime behavior when userAgent is missing
+        userAgent: undefined
+      })).toThrow('User agent is required');
+    });
+
+    it('should not allow empty user agent', () => {
+      expect(() => new QrzApiClient({
+        apiKey: 'test-api',
+        userAgent: ''
+      })).toThrow('User agent is required');
+    });
+
+    it('should enforce user agent length limit', () => {
+      expect(() => new QrzApiClient({
+        apiKey: 'test-api',
+        userAgent: 'A'.repeat(129)
+      })).toThrow('User agent must be 128 characters or less');
+    });
+
+    it('should accept user agent of maximum length', () => {
+      const client = new QrzApiClient({
+        apiKey: 'test-api',
+        userAgent: 'A'.repeat(128)
+      });
+      expect(client).toBeInstanceOf(QrzApiClient);
+    });
   })
 
   describe('baseUrl', () => {
@@ -74,14 +111,20 @@ describe('QrzClient', () => {
     });
 
     it('should use direct API URL in non-browser environment', () => {
-      const client = new QrzApiClient({ apiKey: 'test' });
+      const client = new QrzApiClient({
+        apiKey: 'test',
+        userAgent: 'TestApp/1.0.0'
+      });
       expect((client as any).baseUrl).toBe('https://logbook.qrz.com/api');
       expect(consoleSpy).not.toHaveBeenCalled();
     });
 
     it('should warn and use direct API URL in browser without proxy', () => {
       (global as any).window = {};
-      const client = new QrzApiClient({ apiKey: 'test' });
+      const client = new QrzApiClient({
+        apiKey: 'test',
+        userAgent: 'TestApp/1.0.0'
+      });
       expect((client as any).baseUrl).toBe('https://logbook.qrz.com/api');
       expect(consoleSpy).toHaveBeenCalled();
     });
@@ -90,6 +133,7 @@ describe('QrzClient', () => {
       const proxyUrl = 'https://my-proxy.com';
       const client = new QrzApiClient({
         apiKey: 'test',
+        userAgent: 'TestApp/1.0.0',
         proxyUrl
       });
       expect((client as any).baseUrl).toBe(proxyUrl);
@@ -141,6 +185,7 @@ describe('QrzClient', () => {
           method: 'POST',
           headers: {
             'Content-Type': 'application/x-www-form-urlencoded',
+            'User-Agent': 'TestApp/1.0.0'
           },
           body: formData.toString()
         }
@@ -158,8 +203,30 @@ describe('QrzClient', () => {
         .rejects
         .toThrow(QrzNetworkError)
     })
+
+    it('should maintain user agent across multiple requests', async () => {
+      fetchSpy.mockResolvedValue({
+        ok: true,
+        text: () => Promise.resolve('RESULT=OK')
+      })
+
+      const formData = new URLSearchParams({ TEST: 'value' })
+      await (client as any).fetchWithErrorHandling(formData)
+      await (client as any).fetchWithErrorHandling(formData)
+      await (client as any).fetchWithErrorHandling(formData)
+
+      expect(fetchSpy).toHaveBeenCalledTimes(3)
+      fetchSpy.mock.calls.forEach(call => {
+        expect(call[1].headers).toEqual(
+          expect.objectContaining({
+            'User-Agent': 'TestApp/1.0.0'
+          })
+        )
+      })
+    })
   })
 
+  // Rest of the test file remains the same...
   describe('handleQrzResponse', () => {
     it('should return response for OK result', () => {
       const response = mockQrzResponse.success({ data: 'test' })
@@ -199,7 +266,7 @@ describe('QrzClient', () => {
         })
       )
 
-      const result = await (client as any).makeRequest({
+      const result = await client.makeRequest({
         action: 'STATUS' as QrzAction,
         option: 'test-option'
       })
@@ -211,6 +278,7 @@ describe('QrzClient', () => {
       )
     })
   })
+
   describe('testAuth', () => {
     it('should return valid result for successful auth', async () => {
       fetchSpy.mockResolvedValueOnce({

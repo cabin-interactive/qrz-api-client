@@ -6,10 +6,12 @@ export interface QrzAuthTestResult {
   error?: string;
 }
 
-export interface QrzConfig {
+export interface QrzClientConfig {
   apiKey: string;
+  userAgent: string;
   proxyUrl?: string;
 }
+
 
 export interface QrzBaseParams {
   action: QrzAction;
