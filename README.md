@@ -24,6 +24,37 @@ npm install @cabin-interactive/qrz-api-client
 yarn add @cabin-interactive/qrz-api-client
 ```
 
+## Configuration
+
+The client accepts the following configuration options:
+
+| Option | Required | Description |
+|--------|----------|-------------|
+| apiKey | Yes | Your QRZ.com API key |
+| userAgent | Yes | Unique identifier for your application (max 128 chars) |
+| proxyUrl | No | URL of your CORS proxy (recommended for browser use) |
+
+```typescript
+// For personal scripts
+const client = new QrzApiClient({
+  apiKey: 'your-api-key',
+  userAgent: 'AppName/Version'
+});
+
+// For applications
+const client = new QrzApiClient({
+  apiKey: 'your-api-key',
+  userAgent: 'MyLogbookApp/1.2.0',
+  proxyUrl: 'https://your-proxy.url'  // Optional
+});
+```
+
+According to QRZ.com's requirements:
+- For personal scripts: Must include your callsign, e.g. `"MyScript/1.0.0 (AB5XS)"`
+- For applications: Use format `"AppName/Version"`, e.g. `"MyLogbookApp/1.2.0"`
+- Must be 128 characters or less
+- Generic user agents are not allowed and may be subject to rate limiting
+
 ## Basic Usage
 
 ```typescript
@@ -31,7 +62,8 @@ import QrzApiClient from '@cabin-interactive/qrz-api-client';
 
 // Basic setup - will attempt direct API access
 const client = new QrzApiClient({
-  apiKey: 'your-api-key'
+  apiKey: 'your-api-key',
+  userAgent: 'AppName/Version'
 });
 
 // For browser environments, use a proxy to handle CORS
