@@ -62,7 +62,7 @@ describe('QrzClient', () => {
     let consoleSpy: ReturnType<typeof vi.spyOn>;
 
     beforeEach(() => {
-      delete (global as any).window;
+      (global as any).window = undefined;
       consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => { });
     });
 
