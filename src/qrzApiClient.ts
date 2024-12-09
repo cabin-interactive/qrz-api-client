@@ -23,6 +23,11 @@ export default class QrzApiClient {
       }
       return 'https://logbook.qrz.com/api';
     }
+    try {
+      new URL(this.config.proxyUrl);
+    } catch (e) {
+      throw new QrzError('Invalid proxy URL provided');
+    }
     // Use provided proxy
     return this.config.proxyUrl;
   }
