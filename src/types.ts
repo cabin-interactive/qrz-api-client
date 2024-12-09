@@ -5,8 +5,10 @@ export interface QrzAuthTestResult {
   isValid: boolean;
   error?: string;
 }
+
 export interface QrzConfig {
   apiKey: string;
+  proxyUrl?: string;
 }
 
 export interface QrzBaseParams {

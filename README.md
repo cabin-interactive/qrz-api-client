@@ -29,8 +29,15 @@ yarn add @cabin-interactive/qrz-api-client
 ```typescript
 import QrzApiClient from '@cabin-interactive/qrz-api-client';
 
+// Basic setup - will attempt direct API access
 const client = new QrzApiClient({
   apiKey: 'your-api-key'
+});
+
+// For browser environments, use a proxy to handle CORS
+const client = new QrzApiClient({
+  apiKey: 'your-api-key',
+  proxyUrl: 'your-proxy-url'  // Optional, but recommended for browsers
 });
 
 // Example: Get status
@@ -45,6 +52,25 @@ await client.makeRequest({
   customParam: 'value'
 });
 ```
+
+## CORS and Browser Usage
+The QRZ.com API does not support CORS (Cross-Origin Resource Sharing), which means direct API access from browsers is restricted. When using this client in a browser environment, you have two options:
+
+1. Direct access (may fail due to CORS)
+2. Use a proxy (recommended for browser environments) 
+
+
+If you need a proxy, there are free options like [https://corsproxy.io](corsproxy.io)
+
+```typescript
+// Using a proxy to handle CORS
+const client = new QrzApiClient({
+  apiKey: 'your-api-key',
+  proxyUrl: 'your-proxy-url' // https://corsproxy.io/?url=https://logbook.qrz.com/api
+});
+```
+
+If no proxy is specified in a browser environment, the client will warn you about potential CORS issues.
 
 ## Authentication
 Before making API requests, you can verify your API key is valid:
@@ -80,6 +106,7 @@ Each action may accept different parameters. See the [QRZ API documentation](htt
 - Proper error handling with specific error types
 - Automatic case conversion for API parameters
 - Modern Promise-based API
+- Optional proxy support for browser environments
 
 ## Error Handling
 
