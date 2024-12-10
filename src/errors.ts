@@ -50,19 +50,6 @@ export class QrzNetworkError extends QrzError {
   }
 }
 
-// Invalid input errors
-export class QrzValidationError extends QrzError {
-  constructor(
-    message: string,
-    public readonly field?: string,
-    public readonly value?: unknown
-  ) {
-    super(message)
-    this.name = 'QrzValidationError'
-    Object.setPrototypeOf(this, QrzValidationError.prototype)
-  }
-}
-
 // Not found errors
 export class QrzNotFoundError extends QrzError {
   constructor(
@@ -83,5 +70,59 @@ export class QrzUnknownActionError extends QrzError {
     super(message)
     this.name = 'QrzUnrecognizedCommandError'
     Object.setPrototypeOf(this, QrzUnknownActionError.prototype)
+  }
+}
+/**
+ * Thrown when a QSO is attempted with a station callsign that doesn't match the logbook
+ */
+export class QrzQsoStationCallsignError extends QrzError {
+  constructor(
+    message: string,
+    public readonly providedCallsign?: string,
+    public readonly expectedCallsign?: string
+  ) {
+    super(message)
+    this.name = 'QrzQsoStationCallsignError'
+    Object.setPrototypeOf(this, QrzQsoStationCallsignError.prototype)
+  }
+}
+
+/**
+ * Thrown when a QSO date is outside the allowed range for the logbook
+ */
+export class QrzQsoDateRangeError extends QrzError {
+  constructor(
+    message: string,
+    public readonly providedDate?: string
+  ) {
+    super(message)
+    this.name = 'QrzQsoDateRangeError'
+    Object.setPrototypeOf(this, QrzQsoDateRangeError.prototype)
+  }
+}
+
+/**
+ * Thrown when the ADIF record format is invalid
+ */
+export class QrzAdifFormatError extends QrzError {
+  constructor(message: string) {
+    super(message)
+    this.name = 'QrzAdifFormatError'
+    Object.setPrototypeOf(this, QrzAdifFormatError.prototype)
+  }
+}
+
+/**
+ * Thrown when input validation fails for QRZ API requests
+ */
+export class QrzQsoValidationError extends QrzError {
+  constructor(
+    message: string,
+    public readonly field?: string,
+    public readonly value?: unknown
+  ) {
+    super(message)
+    this.name = 'QrzQsoValidationError'
+    Object.setPrototypeOf(this, QrzQsoValidationError.prototype)
   }
 }
