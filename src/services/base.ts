@@ -21,12 +21,19 @@ export abstract class BaseQrzService {
       }
       return 'https://logbook.qrz.com/api';
     }
+    this.validateProxyUrl(this.config.proxyUrl);
+    return this.config.proxyUrl;
+  }
+  protected validateProxyUrl(url: string): void {
     try {
-      new URL(this.config.proxyUrl);
+      const parsedUrl = new URL(url);
+      if (parsedUrl.protocol !== 'https:') {
+        throw new QrzError('Proxy URL must use HTTPS');
+      }
     } catch (e) {
+      if (e instanceof QrzError) throw e;
       throw new QrzError('Invalid proxy URL provided');
     }
-    return this.config.proxyUrl;
   }
 
   protected createFormData(params: Record<string, string | undefined>): URLSearchParams {

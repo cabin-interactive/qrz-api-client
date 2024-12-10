@@ -12,6 +12,10 @@ class TestService extends BaseQrzService {
   public createTestFormData(params: Record<string, string | undefined>): URLSearchParams {
     return this.createFormData(params);
   }
+
+  public testValidateProxyUrl(url: string): void {
+    this.validateProxyUrl(url);
+  }
 }
 
 describe('BaseQrzService', () => {
@@ -77,6 +81,28 @@ describe('BaseQrzService', () => {
       expect(service.getBaseUrl()).toBe('https://logbook.qrz.com/api');
     });
 
+    it('should validate proxy URL', () => {
+      const service = new TestService({
+        ...validConfig,
+        proxyUrl: 'invalid-url'
+      });
+
+      expect(() => {
+        service.getBaseUrl();
+      }).toThrow('Invalid proxy URL provided');
+    });
+
+    it('should reject non-HTTPS proxy URLs', () => {
+      const service = new TestService({
+        ...validConfig,
+        proxyUrl: 'http://insecure-proxy.com'
+      });
+
+      expect(() => {
+        service.getBaseUrl();
+      }).toThrow('Proxy URL must use HTTPS');
+    });
+
     it('should warn about CORS in browser environment', () => {
       (global as any).window = {};
       const service = new TestService(validConfig);
@@ -96,13 +122,6 @@ describe('BaseQrzService', () => {
       });
 
       expect(service.getBaseUrl()).toBe(proxyUrl);
-    });
-
-    it('should validate proxy URL', () => {
-      expect(() => new TestService({
-        ...validConfig,
-        proxyUrl: 'invalid-url'
-      }).getBaseUrl()).toThrow('Invalid proxy URL provided');
     });
   });
 
@@ -152,6 +171,34 @@ describe('BaseQrzService', () => {
       });
 
       expect(formData.get('KEY')).toBe('test-key'); // Should always use the configured key
+    });
+  });
+
+  describe('validateProxyUrl', () => {
+    let service: TestService;
+
+    beforeEach(() => {
+      service = new TestService(validConfig);
+    });
+
+    it('should reject non-HTTPS proxy URLs', () => {
+      expect(() => service.testValidateProxyUrl('http://insecure-proxy.com'))
+        .toThrow('Proxy URL must use HTTPS');
+    });
+
+    it('should reject invalid URLs', () => {
+      expect(() => service.testValidateProxyUrl('not-a-url'))
+        .toThrow('Invalid proxy URL provided');
+    });
+
+    it('should accept valid HTTPS URLs', () => {
+      expect(() => service.testValidateProxyUrl('https://secure-proxy.com'))
+        .not.toThrow();
+    });
+
+    it('should reject URLs without protocol', () => {
+      expect(() => service.testValidateProxyUrl('secure-proxy.com'))
+        .toThrow('Invalid proxy URL provided');
     });
   });
 });
