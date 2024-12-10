@@ -1,5 +1,5 @@
 export type QrzAction = 'STATUS' | 'INSERT' | 'DELETE' | 'FETCH';
-export type QrzResultType = 'OK' | 'FAIL' | 'AUTH';
+export type QrzResultType = 'OK' | 'FAIL' | 'AUTH' | 'REPLACE';
 
 export interface QrzAuthTestResult {
   isValid: boolean;
@@ -28,7 +28,7 @@ interface QrzBaseResponse {
 }
 
 export interface QrzSuccessResponse extends QrzBaseResponse {
-  result: 'OK';
+  result: 'OK' | 'REPLACE';
   logIds?: string;
   logId?: string;
   count?: string;
@@ -46,3 +46,27 @@ export interface QrzAuthResponse extends QrzBaseResponse {
 }
 
 export type QrzResponse = QrzSuccessResponse | QrzFailResponse | QrzAuthResponse;
+
+export interface QsoUploadOptions {
+  /**
+   * If true, automatically overwrites any existing duplicate QSOs.
+   * WARNING: This WILL overwrite confirmed QSOs with unconfirmed ones
+   * if they match the same QSO criteria.
+   */
+  replace?: boolean;
+}
+
+export interface QsoUploadResponse {
+  /**
+   * The unique ID of the uploaded QSO in the logbook
+   */
+  logId: string;
+  /**
+   * Whether the QSO was newly inserted or replaced an existing one
+   */
+  status: 'inserted' | 'replaced';
+  /**
+   * The number of QSOs affected (should always be 1)
+   */
+  count: number;
+}
