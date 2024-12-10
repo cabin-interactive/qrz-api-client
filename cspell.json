@@ -3,7 +3,8 @@
   "language": "en",
   "words": [
     "adif",
-    "callsign"
+    "callsign",
+    "HAMRS"
   ],
   "ignoreWords": [],
   "ignorePaths": [],
