@@ -126,3 +126,15 @@ export class QrzQsoValidationError extends QrzError {
     Object.setPrototypeOf(this, QrzQsoValidationError.prototype)
   }
 }
+
+export class QrzDuplicateQsoError extends QrzError {
+  constructor(
+    message: string,
+    public readonly field?: string,
+    public readonly value?: unknown
+  ) {
+    super(message)
+    this.name = 'QrzDuplicateQsoError'
+    Object.setPrototypeOf(this, QrzDuplicateQsoError.prototype)
+  }
+}

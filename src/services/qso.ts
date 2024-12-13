@@ -1,12 +1,18 @@
-// services/qso.ts
 import { BaseQrzService } from "./base";
 import { HttpService } from "./http";
 import {
   QrzAdifFormatError,
   QrzQsoValidationError,
-  QrzError
+  QrzError,
+  QrzQsoStationCallsignError
 } from "../errors";
-import type { QsoUploadOptions, QsoUploadResponse, QrzClientConfig } from "../types";
+import type {
+  QsoUploadOptions,
+  QsoUploadResponse,
+  QrzClientConfig,
+  QrzResponse,
+  QrzFailResponse
+} from "../types";
 
 export class QsoService extends BaseQrzService {
   constructor(
@@ -27,40 +33,56 @@ export class QsoService extends BaseQrzService {
 
     const response = await this.http.post(params);
 
-    // Verify the response format
-    if (!response.logId || !response.count) {
-      throw new QrzError('Unexpected API response format');
-    }
+    // Handle the two specific failure cases
+    if (response.result === 'FAIL') {
+      const errorMessage = response.reason;
 
-    const count = parseInt(response.count, 10);
-    if (count !== 1) {
-      throw new QrzError(`Expected count of 1, got ${count}`);
-    }
+      if (errorMessage?.includes('duplicate')) {
+        throw new QrzError('QSO already exists in logbook');
+      }
 
+      if (errorMessage?.includes('station_callsign')) {
+        throw new QrzQsoStationCallsignError(errorMessage);
+      }
+      throw new QrzError(errorMessage || 'Failed to upload QSO');
+    }
+    if (response.result != 'OK' && response.result != 'REPLACE') {
+      throw new QrzError(response.result || 'Failed to upload QSO');
+    }
+    // Success case (COUNT=1&LOGID=1193649&RESULT=OK)
     return {
-      logId: response.logId,
-      status: response.result === 'REPLACE' ? 'replaced' : 'inserted',
-      count
+      logId: response.logId || '',
+      status: response.result,
+      count: response.count ? parseInt(response.count, 10) : 1
     };
   }
 
+  private isFailResponse(response: QrzResponse): response is QrzFailResponse {
+    return response.result === 'FAIL';
+  }
+
   private validateAdif(adif: string): void {
-    if (!adif.includes('<eor>')) {
+    // Convert ADIF to uppercase once for all comparisons
+    const upperAdif = adif.toUpperCase();
+
+    if (!upperAdif.includes('<EOR>')) {
       throw new QrzAdifFormatError('Invalid ADIF format: missing <eor> tag');
     }
 
-    const requiredFields = ['band', 'mode', 'call', 'qso_date', 'time_on'];
+    const requiredFields = ['BAND', 'MODE', 'CALL', 'QSO_DATE', 'TIME_ON'];
     for (const field of requiredFields) {
-      if (!adif.includes(`<${field}:`)) {
+      if (!upperAdif.includes(`<${field}:`)) {
+        // Convert back to lowercase for the error message to match documentation
+        const originalField = field.toLowerCase();
         throw new QrzQsoValidationError(
-          `Missing required ADIF field: ${field}`,
-          field
+          `Missing required ADIF field: ${originalField}`,
+          originalField
         );
       }
     }
 
-    const stationIdentifiers = ['station_callsign', 'operator'];
-    if (!stationIdentifiers.some(field => adif.includes(`<${field}:`))) {
+    const stationIdentifiers = ['STATION_CALLSIGN', 'OPERATOR'];
+    if (!stationIdentifiers.some(field => upperAdif.includes(`<${field}:`))) {
       throw new QrzQsoValidationError(
         'Missing station identification: either station_callsign or operator is required',
         'station_identification'

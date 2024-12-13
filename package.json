@@ -39,7 +39,6 @@
   "scripts": {
     "build": "tsc",
     "clean": "rm -rf dist",
-    "prepare": "yarn build",
     "prepublishOnly": "yarn clean && yarn test && yarn build",
     "publish:major": "yarn prepublishOnly && npm version major && npm publish",
     "publish:minor": "yarn prepublishOnly && npm version minor && npm publish",
@@ -54,5 +53,6 @@
     "@vitest/coverage-v8": "2.1.8",
     "typescript": "^5.7.2",
     "vitest": "^2.1.8"
-  }
+  },
+  "dependencies": {}
 }

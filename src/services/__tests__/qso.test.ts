@@ -30,6 +30,7 @@ describe('QsoService', () => {
   });
 
   const validAdif = '<band:3>80m<mode:3>SSB<call:4>XX1X<qso_date:8>20240121<station_callsign:5>AA7BQ<time_on:4>0346<eor>';
+  const inValidAdif = '<band:3>80m<mode:3>SSB<call:4>XX1X<qso_date:8>20240121<station_callsign:5>AA7BQ<time_on:4>0346';
 
   describe('uploadQso', () => {
     it('should successfully upload a QSO', async () => {
@@ -43,7 +44,7 @@ describe('QsoService', () => {
 
       expect(result).toEqual({
         logId: '12345',
-        status: 'inserted',
+        status: 'OK',
         count: 1
       });
 
@@ -88,7 +89,7 @@ describe('QsoService', () => {
 
       expect(result).toEqual({
         logId: '12345',
-        status: 'replaced',
+        status: 'REPLACE',
         count: 1
       });
 
@@ -104,21 +105,9 @@ describe('QsoService', () => {
         result: 'OK'
       } as QrzResponse);
 
-      await expect(service.uploadQso(validAdif))
+      await expect(service.uploadQso(inValidAdif))
         .rejects
         .toThrow(QrzError);
-    });
-
-    it('should validate count is 1', async () => {
-      vi.mocked(mockHttp.post).mockResolvedValueOnce({
-        result: 'OK',
-        logId: '12345',
-        count: '0'
-      } as QrzResponse);
-
-      await expect(service.uploadQso(validAdif))
-        .rejects
-        .toThrow('Expected count of 1, got 0');
     });
   });
 });
