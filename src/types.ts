@@ -57,16 +57,7 @@ export interface QsoUploadOptions {
 }
 
 export interface QsoUploadResponse {
-  /**
-   * The unique ID of the uploaded QSO in the logbook
-   */
   logId: string;
-  /**
-   * Whether the QSO was newly inserted or replaced an existing one
-   */
-  status: 'inserted' | 'replaced';
-  /**
-   * The number of QSOs affected (should always be 1)
-   */
+  status: 'OK' | 'REPLACE';
   count: number;
 }
