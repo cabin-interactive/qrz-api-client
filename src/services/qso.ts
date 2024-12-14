@@ -62,16 +62,13 @@ export class QsoService extends BaseQrzService {
   }
 
   private validateAdif(adif: string): void {
-    // Convert ADIF to uppercase once for all comparisons
-    const upperAdif = adif.toUpperCase();
-
-    if (!upperAdif.includes('<EOR>')) {
+    if (!/<eor>$/i.test(adif)) {
       throw new QrzAdifFormatError('Invalid ADIF format: missing <eor> tag');
     }
-
     const requiredFields = ['BAND', 'MODE', 'CALL', 'QSO_DATE', 'TIME_ON'];
     for (const field of requiredFields) {
-      if (!upperAdif.includes(`<${field}:`)) {
+      const fieldRegex = new RegExp(`<${field}:`, 'i');
+      if (!fieldRegex.test(adif)) {
         // Convert back to lowercase for the error message to match documentation
         const originalField = field.toLowerCase();
         throw new QrzQsoValidationError(
@@ -80,9 +77,8 @@ export class QsoService extends BaseQrzService {
         );
       }
     }
-
     const stationIdentifiers = ['STATION_CALLSIGN', 'OPERATOR'];
-    if (!stationIdentifiers.some(field => upperAdif.includes(`<${field}:`))) {
+    if (!stationIdentifiers.some(field => new RegExp(`<${field}:`, 'i').test(adif))) {
       throw new QrzQsoValidationError(
         'Missing station identification: either station_callsign or operator is required',
         'station_identification'
