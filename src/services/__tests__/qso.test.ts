@@ -104,10 +104,12 @@ describe('QsoService', () => {
       vi.mocked(mockHttp.post).mockResolvedValueOnce({
         result: 'OK'
       } as QrzResponse);
-
       await expect(service.uploadQso(inValidAdif))
         .rejects
-        .toThrow(QrzError);
+        .toThrow(QrzAdifFormatError);
+      await expect(service.uploadQso(inValidAdif))
+        .rejects
+        .toThrowError('Invalid ADIF format: missing <eor> tag');
     });
   });
 });

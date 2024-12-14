@@ -15,6 +15,11 @@ import type {
 } from "../types";
 
 export class QsoService extends BaseQrzService {
+
+  private static readonly RESULT_OK = 'OK';
+  private static readonly RESULT_FAIL = 'FAIL';
+  private static readonly RESULT_REPLACE = 'REPLACE';
+
   constructor(
     config: QrzClientConfig,
     private readonly http: HttpService
@@ -34,7 +39,7 @@ export class QsoService extends BaseQrzService {
     const response = await this.http.post(params);
 
     // Handle the two specific failure cases
-    if (response.result === 'FAIL') {
+    if (this.isFailResponse(response)) {
       const errorMessage = response.reason;
 
       if (errorMessage?.includes('duplicate')) {
@@ -46,7 +51,7 @@ export class QsoService extends BaseQrzService {
       }
       throw new QrzError(errorMessage || 'Failed to upload QSO');
     }
-    if (response.result != 'OK' && response.result != 'REPLACE') {
+    if (response.result !== QsoService.RESULT_OK && response.result !== QsoService.RESULT_REPLACE) {
       throw new QrzError(response.result || 'Failed to upload QSO');
     }
     // Success case (COUNT=1&LOGID=1193649&RESULT=OK)
@@ -58,7 +63,7 @@ export class QsoService extends BaseQrzService {
   }
 
   private isFailResponse(response: QrzResponse): response is QrzFailResponse {
-    return response.result === 'FAIL';
+    return response.result === QsoService.RESULT_FAIL;
   }
 
   private validateAdif(adif: string): void {
