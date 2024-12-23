@@ -39,18 +39,20 @@ export class QsoService extends BaseQrzService {
 
     const response = await this.http.post(params);
 
-    // Handle the two specific failure cases
+
     if (this.isFailResponse(response)) {
       const errorMessage = response.reason;
-      // STATUS=FAIL&RESULT=FAIL&REASON=Unable to add QSO to database: duplicate&EXTENDED=
-      if (errorMessage?.includes('duplicate')) {
+      const lowerCaseErrorMessage = errorMessage?.toLowerCase();
+      // Handle the two specific failure cases
+      if (lowerCaseErrorMessage === 'unable to add qso to database: duplicate') {
+        // STATUS=FAIL&RESULT=FAIL&REASON=Unable to add QSO to database: duplicate&EXTENDED=
         throw new QrzDuplicateQsoError('QSO already exists in logbook');
-      }
-
-      if (errorMessage?.includes('station_callsign')) {
+      } else if (lowerCaseErrorMessage.includes('wrong station_callsign')) {
+        // STATUS=FAIL&RESULT=FAIL&REASON=wrong station_callsign for this logbook KB0ICTJG doesnt match book callsign KB0ICT&EXTENDED=
         throw new QrzQsoStationCallsignError(errorMessage);
+      } else {
+        throw new QrzError(errorMessage || 'Failed to upload QSO');
       }
-      throw new QrzError(errorMessage || 'Failed to upload QSO');
     }
     if (response.result !== QsoService.RESULT_OK && response.result !== QsoService.RESULT_REPLACE) {
       throw new QrzError(response.result || 'Failed to upload QSO');
