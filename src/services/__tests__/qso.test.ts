@@ -101,30 +101,6 @@ describe('QsoService', () => {
         option: 'REPLACE'
       });
     });
-    it('should throw QrzDuplicateQsoError when QSO already exists', async () => {
-      vi.mocked(mockHttp.post).mockResolvedValueOnce({
-        status: 'FAIL',
-        result: 'FAIL',
-        reason: 'Unable to add QSO to database: duplicate',
-        extended: ''
-      } as QrzResponse);
-
-      await expect(service.uploadQso(validAdif))
-        .rejects
-        .toThrow(QrzDuplicateQsoError);
-    });
-
-    it('should throw QrzQsoStationCallsignError when station_callsign is invalid/missing', async () => {
-      vi.mocked(mockHttp.post).mockResolvedValueOnce({
-        result: 'FAIL',
-        status: 'FAIL',
-        reason: 'wrong station_callsign for this logbook KB0ICTJ doesnt match book callsign KB0ICT'
-      } as QrzResponse);
-
-      await expect(service.uploadQso(validAdif))
-        .rejects
-        .toThrow(QrzQsoStationCallsignError);
-    });
 
     it('should validate response format', async () => {
       vi.mocked(mockHttp.post).mockResolvedValueOnce({

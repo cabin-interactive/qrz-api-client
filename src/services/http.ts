@@ -4,10 +4,22 @@ import {
   QrzAuthError,
   QrzUnknownActionError,
   QrzQsoValidationError,
+  QrzDuplicateQsoError,
+  QrzQsoStationCallsignError,
   QrzError
 } from "../errors";
 import type { QrzResponse } from "../types";
 import { parseQrzResponse } from "../parser";
+// STATUS=FAIL&RESULT=FAIL&REASON=Unable to add QSO to database: duplicate&EXTENDED=
+// STATUS=FAIL&RESULT=FAIL&REASON=wrong station_callsign for this logbook KB0ICTS doesnt match book callsign KB0ICT&EXTENDED=
+// COUNT=1&LOGID=1193542649&RESULT=OK
+// STATUS=FAIL&RESULT=FAIL&REASON=Replace error on record: DXCC could not be determined for TEST2&EXTENDED=
+// COUNT=1&RESULT=REPLACE&LOGID=1193504315
+
+export const QRZ_ERROR_RESPONSES = {
+  DUPLICATE_QSO: 'Unable to add QSO to database: duplicate',
+  WRONG_STATION_CALLSIGN: 'wrong station_callsign for this logbook'
+}
 
 export class HttpService extends BaseQrzService {
   async post(params: Record<string, string | undefined>): Promise<QrzResponse> {
@@ -34,7 +46,12 @@ export class HttpService extends BaseQrzService {
     }
 
     if (response.result === 'FAIL') {
-      // Handle specific failure cases
+      if (response.reason?.includes(QRZ_ERROR_RESPONSES.DUPLICATE_QSO)) {
+        throw new QrzDuplicateQsoError(response.reason);
+      }
+      if (response.reason?.includes(QRZ_ERROR_RESPONSES.WRONG_STATION_CALLSIGN)) {
+        throw new QrzQsoStationCallsignError(response.reason)
+      }
       if (response.reason?.includes('unrecognized command')) {
         throw new QrzUnknownActionError(
           response.reason,

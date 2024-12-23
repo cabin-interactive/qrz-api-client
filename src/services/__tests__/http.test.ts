@@ -1,13 +1,13 @@
 // services/__tests__/http.test.ts
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { HttpService } from '../http';
-import { QrzNetworkError, QrzError, QrzAuthError } from '../../errors';
-// STATUS=FAIL&RESULT=FAIL&REASON=Unable to add QSO to database: duplicate&EXTENDED=
-// STATUS=FAIL&RESULT=FAIL&REASON=wrong station_callsign for this logbook KB0ICTS doesnt match book callsign KB0ICT&EXTENDED=
-// COUNT=1&LOGID=1193542649&RESULT=OK
+import { HttpService, QRZ_ERROR_RESPONSES } from '../http';
+import { QrzNetworkError, QrzError, QrzAuthError, QrzQsoStationCallsignError, QrzDuplicateQsoError } from '../../errors';
+
 // STATUS=FAIL&RESULT=FAIL&REASON=Replace error on record: DXCC could not be determined for TEST2&EXTENDED=
 // COUNT=1&RESULT=REPLACE&LOGID=1193504315
-
+const SUCCESSFUL_INSERT_RESPONSE = 'RESULT=OK&LOGID=123456789&COUNT=1'
+const WRONG_STATION_CALLSIGN_ERROR_RESPONSE = 'STATUS=FAIL&RESULT=FAIL&REASON=wrong station_callsign for this logbook KB0ICTJG doesnt match book callsign KB0ICT&EXTENDED='
+const DUPLICATE_QSO_ERROR_RESPONSE = '// STATUS=FAIL&RESULT=FAIL&REASON=Unable to add QSO to database: duplicate&EXTENDED='
 describe('HttpService', () => {
   let service: HttpService;
   let fetchSpy: ReturnType<typeof vi.fn>;
@@ -161,12 +161,37 @@ describe('HttpService', () => {
       });
     });
 
+    describe('fail responses', () => {
+      it('throws QrzQsoStationCallsignError for wrong station_callsign', async () => {
+        fetchSpy.mockResolvedValueOnce({
+          ok: true,
+          status: 200,
+          text: () => Promise.resolve(WRONG_STATION_CALLSIGN_ERROR_RESPONSE)
+        });
+
+        await expect(service.post({ action: 'INSERT' }))
+          .rejects
+          .toThrow(QrzQsoStationCallsignError);
+      })
+      it('throws QrzDuplicateQdoError for QSOs already in the log', async () => {
+        fetchSpy.mockResolvedValueOnce({
+          ok: true,
+          status: 200,
+          text: () => Promise.resolve(DUPLICATE_QSO_ERROR_RESPONSE)
+        });
+
+        await expect(service.post({ action: 'INSERT' }))
+          .rejects
+          .toThrow(QrzDuplicateQsoError);
+      })
+    })
+
     describe('successful responses', () => {
       it('parses a successful QSO insert response', async () => {
         fetchSpy.mockResolvedValueOnce({
           ok: true,
           status: 200,
-          text: () => Promise.resolve('RESULT=OK&LOGID=130877825&COUNT=1')
+          text: () => Promise.resolve(SUCCESSFUL_INSERT_RESPONSE)
         });
 
         const result = await service.post({
@@ -176,7 +201,7 @@ describe('HttpService', () => {
 
         expect(result).toEqual({
           result: 'OK',
-          logid: '130877825',
+          logid: '123456789',
           count: '1'
         });
       });

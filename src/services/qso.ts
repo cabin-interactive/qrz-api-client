@@ -1,11 +1,10 @@
+// qso.ts
 import { BaseQrzService } from "./base";
 import { HttpService } from "./http";
 import {
   QrzAdifFormatError,
   QrzQsoValidationError,
   QrzError,
-  QrzQsoStationCallsignError,
-  QrzDuplicateQsoError
 } from "../errors";
 import type {
   QsoUploadOptions,
@@ -37,26 +36,23 @@ export class QsoService extends BaseQrzService {
       ...(options.replace ? { option: 'REPLACE' } : {})
     };
 
-    const response = await this.http.post(params);
-
+    // Catch errors thrown by HttpService.post before evaluating response
+    let response: QrzResponse;
+    try {
+      response = await this.http.post(params);
+    } catch (err) {
+      throw err;
+    }
 
     if (this.isFailResponse(response)) {
       const errorMessage = response.reason;
-      const lowerCaseErrorMessage = errorMessage?.toLowerCase();
-      // Handle the two specific failure cases
-      if (lowerCaseErrorMessage === 'unable to add qso to database: duplicate') {
-        // STATUS=FAIL&RESULT=FAIL&REASON=Unable to add QSO to database: duplicate&EXTENDED=
-        throw new QrzDuplicateQsoError('QSO already exists in logbook');
-      } else if (lowerCaseErrorMessage.includes('wrong station_callsign')) {
-        // STATUS=FAIL&RESULT=FAIL&REASON=wrong station_callsign for this logbook KB0ICTJG doesnt match book callsign KB0ICT&EXTENDED=
-        throw new QrzQsoStationCallsignError(errorMessage);
-      } else {
-        throw new QrzError(errorMessage || 'Failed to upload QSO');
-      }
+      throw new QrzError(errorMessage || 'Failed to upload QSO');
     }
+
     if (response.result !== QsoService.RESULT_OK && response.result !== QsoService.RESULT_REPLACE) {
       throw new QrzError(response.result || 'Failed to upload QSO');
     }
+
     // Success case (COUNT=1&LOGID=1193649&RESULT=OK)
     return {
       logId: response.logId || '',
