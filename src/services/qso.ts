@@ -4,7 +4,8 @@ import {
   QrzAdifFormatError,
   QrzQsoValidationError,
   QrzError,
-  QrzQsoStationCallsignError
+  QrzQsoStationCallsignError,
+  QrzDuplicateQsoError
 } from "../errors";
 import type {
   QsoUploadOptions,
@@ -41,9 +42,9 @@ export class QsoService extends BaseQrzService {
     // Handle the two specific failure cases
     if (this.isFailResponse(response)) {
       const errorMessage = response.reason;
-
+      // STATUS=FAIL&RESULT=FAIL&REASON=Unable to add QSO to database: duplicate&EXTENDED=
       if (errorMessage?.includes('duplicate')) {
-        throw new QrzError('QSO already exists in logbook');
+        throw new QrzDuplicateQsoError('QSO already exists in logbook');
       }
 
       if (errorMessage?.includes('station_callsign')) {

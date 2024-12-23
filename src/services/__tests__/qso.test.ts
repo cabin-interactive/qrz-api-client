@@ -5,7 +5,8 @@ import { HttpService } from '../http';
 import {
   QrzAdifFormatError,
   QrzQsoValidationError,
-  QrzError
+  QrzError,
+  QrzDuplicateQsoError,
 } from '../../errors';
 import type { QrzResponse } from '../../types';
 
@@ -99,7 +100,18 @@ describe('QsoService', () => {
         option: 'REPLACE'
       });
     });
+    it('should throw QrzDuplicateQsoError when QSO already exists', async () => {
+      vi.mocked(mockHttp.post).mockResolvedValueOnce({
+        status: 'FAIL',
+        result: 'FAIL',
+        reason: 'Unable to add QSO to database: duplicate',
+        extended: ''
+      } as QrzResponse);
 
+      await expect(service.uploadQso(validAdif))
+        .rejects
+        .toThrow(QrzDuplicateQsoError);
+    });
     it('should validate response format', async () => {
       vi.mocked(mockHttp.post).mockResolvedValueOnce({
         result: 'OK'
